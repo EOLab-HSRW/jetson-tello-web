@@ -1,20 +1,24 @@
 import jetson.utils
 from jetson.utils import (cudaDeviceSynchronize,saveImage	)
-from manager import Manager
+from manager import Module_Manager
+from time import sleep
 
-manager = Manager()
-
-net = jetson.inference.detectNet("ssd-mobilenet-v2", threshold=0.5)
+manager = Module_Manager()
 camera = jetson.utils.videoSource("rtp://127.0.0.1:8001",['-input-codec=h264'])#"csi://0")
 #display = jetson.utils.videoOutput("rtp://127.0.0.1:8002",['-headless','-output-codec=h264'])
 #display = jetson.utils.videoOutput("./image.jpg",['-headless'])#,'-output-codec=h264'])
 
 
 
-while True:
-	img = camera.Capture()
-	detections = net.Detect(img)
-	for detection in detections:
-		print(net.GetClassDesc(detection.ClassID))
-	saveImage("./my_image.jpg",img)
-	#display.render(img)
+
+img = camera.Capture()
+detections = manager.process(image=img,task_type="detection") #net.Detect(img)
+detections = detections[0]
+if len(detections) > 1:
+	for detection in detections[1]:
+		print(detection[0])
+
+manager.kill()
+saveImage("./my_image.jpg",detections[0])
+print("image saved")
+#display.render(img)
