@@ -1,88 +1,104 @@
 from models.detectnet import DetectNet
+from models.imagenet import Imagenet
 from threading import Thread, Event
 from multiprocessing import Process, Manager, Queue
 from time import sleep
 from ctypes import c_bool
 
-class Module_Manager():
-	
+class ModelManager():
 
-	def __init__(self,threshold=0.5):
-		self.current_thread = None
-		self.threshold = threshold
-		self.network = None
-		self.last_task_type=""
+	def __init__(self):
+		self.current_thread = None # saves current thread of manager
+		self.last_task_type="" # saves the last task type of manager
 		
-		self.thread_running = True
-		self.result = []
-		self.processed = False
-		self.processing_requested = False
-		self.img = None
+		self.result = [] # the inference result
+		self.processed = [False] # flag to notify main thread about child thread completion
+		self.processing_requested = [False] # flag to request inference in child thread
+		self.inp = [None] # input image
+		self.event = Event() # trigger to quit child thread
 		
 		
+	# thread target for inference
 	
-	def process_thread(self,processing_requested,img,result,processed, thread_running, event):
-		print("f3")
-		network = DetectNet()
+	# attributes for data exchange between the threads
+	
+	# processing_requested - flag to request inference in child thread
+	# inp - input image
+	# result - flag to request inference in child thread
+	# processed - flag to notify main thread about child thread completion
+	# event - trigger to quit child thread
+	# task_type - choose network
+	def process_thread(self,processing_requested,inp,result,processed, event, task_type):
+		# choose network to load
+		if task_type == "detection":
+			network = DetectNet()
+		elif task_type == "classification":
+			network = Imagenet()
+			
 		while True:
-			print("shit")
-			print(processing_requested)
+			# if processing was requested by main thread
 			if processing_requested[0]:
-				print("f4")
-				result.append(network.run_inference(img))
+				# run inference and append to result
+				result.append(network.run_inference(inp[0]))
+				# print result
+				print("=====Result in child=====")
 				print(result)
-				processed[0] = True 
-				print(processed)
-			if event.is_set():#not thread_running:
-				print("f5")
+				print("set processed true in child")
+				# set processed flag to True to notify main thread
+				processed[0] = True
+			# trigger to kill child process
+			if event.is_set():
+				print("killed child process "+ task_type)
 				break
-			sleep(1)
-		
+	
+	# method kills the current thread
 	def kill(self):
 		print("initiated process kill")
+		# set trigger
 		self.event.set()
 		self.current_thread = None
-		#self.current_thread.join()
 	
+	# main processing method for inference
 	def process(self, image,task_type="detection"):
-		self.event = Event()
+		# clear previous calls' result
+		self.result.clear()
+		# try catch for handling keyboard interrupt
 		try:
-			print("a")
 			# check whether this is a different task type
 			if not self.last_task_type == task_type:
-				print("b")
 				# if different, check whether the thread is already running
 				if not self.current_thread == None:
-					#self.thread_running = False
-					self.current_thread.terminate()
-					print("c")
-				processing_requested = [False]
-				processed = [False]
-				self.current_thread=Thread(target=self.process_thread, args=(processing_requested,image,self.result, processed, self.thread_running, self.event))
-				self.current_thread.start()
-				print("f1")
-					#if task_type == "detection":
-					#	self.network = DetectNet()
-					#	print("f2")
-					
-				#self.current_thread.join()
-					# else:
-					# the task type is the same
+					self.event.set() # set event to stop the currently running thread
+					self.current_thread.join() # wait until the child thread quits
+					self.current_thread = None
+					self.event.clear() # reset trigger for future tasks
 				
-				processed[0] = False
-				processing_requested[0] = True
-				print("set processing_requested  true in main process")				
-				print("d")
-				while True:
-					print("e")
-					sleep(1)
-					print("processed in main thread")
-					print(processed)
-					if processed[0]:
-						processing_requested[0] = False
-						break
-				print("f")
+				# create new child thread and start it
+				self.current_thread=Thread(target=self.process_thread, args=(self.processing_requested,self.inp,self.result, self.processed, self.event, task_type))
+				self.current_thread.start()
+				print("created child process "+ task_type)
+				# save last task type in manager
+				self.last_task_type = task_type
+				
+			# set input image and request/ response flags
+			self.inp[0] = image
+			self.processed[0] = False
+			self.processing_requested[0] = True
+			
+			print("set processing_requested  true in main process")
+			# wait while request is processed in child
+			while True:
+				if self.processed[0]:
+					# cancel processing request
+					self.processing_requested[0] = False
+					break
 		except KeyboardInterrupt:
+			# kill the child thread
 			self.event.set()
-		return self.result
+		
+		# return inference results
+		print("=======Results=======")
+		print(self.result)
+		return_result = self.result[0]
+		return return_result
 				

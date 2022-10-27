@@ -7,7 +7,7 @@ class DetectNet(Model):
 	is_running: bool
 
 	def run(self):
-		self.net = jetson.inference.detectNet(self.model_path)
+		#self.net = jetson.inference.detectNet(self.model_path)
 		self.is_running=True
 
 	def stop(self):
@@ -25,6 +25,8 @@ class DetectNet(Model):
 		detections = self.net.Detect(img)
 
 		my_detections.append(img)
+		print("=================detections=================")
+		print(detections)
 		for detection in detections:
 			my_detections.append([self.net.GetClassDesc(detection.ClassID),detection.Confidence,round(detection.Top),round(detection.Bottom), round(detection.Left), round(detection.Right)])
 		print(len(my_detections))
