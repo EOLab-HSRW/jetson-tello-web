@@ -39,11 +39,24 @@ class Server(Resource):
 
         app.run(host=self.HOST, port=self.PORT, debug=self.DEBUG)
 
+    # this endpoint renders the index html page
+    # has no importance right now
     @app.route("/", methods=['GET'])
     def index():
         """Serves the main entry point"""
         return render_template("index.html")
 
+    # the endpoint receives POST requests with the following body:
+    # model - String - the task to be completed: detection or classification
+    # input - String - the input from which to get image. Possible values: 
+    #   image - image filefrom request body  
+    #   camera source : values csi://0, /dev/video2 and etc - the path to the camera driver from which to take image
+    #   
+    # global variable model, camera and camera_source are used to save state of inference
+    # and track camera source changes
+    # the image is converted to cuda format and sent to manager
+    # if the model is not in the list of supported ones by manager, the error json is returned
+    # otherwise the inferred image is returned
     @app.route("/launch", methods=['POST'])
     def launch():
         global model
@@ -77,12 +90,14 @@ class Server(Resource):
         return send_file('./MyImage_det.jpg')# send response with image
         #render_template("index.html")
     
+    # endpoint returns the state of inference framework with running model and camera source
     @app.route("/state", methods=['GET'])
     def state():
         global model
         global camera_source
         return {"running_model":model,"input_source":camera_source}
-    
+
+    # endpoint returns the information about the manager's supported models
     @app.route("/info", methods=['GET'])
     def info():
         return ModelManager.supported_models
