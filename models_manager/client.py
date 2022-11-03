@@ -2,7 +2,7 @@ import asyncio
 import websockets
 
 HOST: str = "0.0.0.0"
-PORT: int = 5000
+PORT: int = 4040
 
 async def launch():
     uri = f"ws://{HOST}:{PORT}"
