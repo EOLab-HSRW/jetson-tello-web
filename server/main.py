@@ -19,6 +19,7 @@ manager = ModelManager()
 # global camera and instance variables, will be changed in launch endpoint
 camera = None
 camera_source =""
+model = ""
 
 class Server(Resource):
 
@@ -45,9 +46,13 @@ class Server(Resource):
 
     @app.route("/launch", methods=['POST'])
     def launch():
+        global model
         global camera
         global camera_source
 
+
+        if not request.form['model'] in ModelManager.supported_models:
+            return {"error": request.form['model']+" model is not supported"}
         # read request body params
         model = request.form['model']
         input = request.form['input']
@@ -62,16 +67,25 @@ class Server(Resource):
                 camera =jetson.utils.videoSource(input) # init new camera instance with new input
                 camera_source=input # save the last camera source
             image_cuda = camera.Capture()  # get new cuda image from camera
+
         detections=manager.process(image=image_cuda,task_type=model) # send cuda image and model to manager
         if len(detections)>0:# if something was detected 
             jetson.utils.saveImageRGBA('./MyImage_det.jpg',detections[0]) # save image
         """Serves the main entry point"""
 
-        return send_file('./MyImage_det.jpg')# send response with image
         
+        return send_file('./MyImage_det.jpg')# send response with image
         #render_template("index.html")
     
+    @app.route("/state", methods=['GET'])
+    def state():
+        global model
+        global camera_source
+        return {"running_model":model,"input_source":camera_source}
     
+    @app.route("/info", methods=['GET'])
+    def info():
+        return ModelManager.supported_models
 
     @app.route("/video-stream", methods=['GET'])
     def video_stream():

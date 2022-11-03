@@ -7,6 +7,19 @@ from ctypes import c_bool
 
 class ModelManager():
 
+	supported_models ={
+		"detection":{
+			"networks":[
+				"ssd-mobilenet-v2"
+			]
+		},
+		"classification":{
+			"networks":[
+				"googlenet"
+			]
+		}
+	}
+
 	def __init__(self):
 		self.current_thread = None # saves current thread of manager
 		self.last_task_type="" # saves the last task type of manager
@@ -29,6 +42,7 @@ class ModelManager():
 	# event - trigger to quit child thread
 	# task_type - choose network
 	def process_thread(self,processing_requested,inp,result,processed, event, task_type):
+
 		# choose network to load
 		if task_type == "detection":
 			network = DetectNet()
@@ -49,8 +63,8 @@ class ModelManager():
 			# trigger to kill child process
 			if event.is_set():
 				print("killed child process "+ task_type)
-				break
-	
+				break	
+
 	# method kills the current thread
 	def kill(self):
 		print("initiated process kill")
