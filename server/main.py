@@ -1,10 +1,24 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify, send_file
 from flask_restful import Api, Resource
 from flask_cors import CORS
+import sys
+import jetson.utils
+# appended models manager folder to sys path to be able to import from it
+sys.path.append("..")
+sys.path.append("../models_manager")
+# import ModelManager
+from models_manager.manager import ModelManager
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 api = Api(app)
+
+# ModelManager instance
+manager = ModelManager()
+
+# global camera and instance variables, will be changed in launch endpoint
+camera = None
+camera_source =""
 
 class Server(Resource):
 
@@ -28,6 +42,36 @@ class Server(Resource):
     def index():
         """Serves the main entry point"""
         return render_template("index.html")
+
+    @app.route("/launch", methods=['POST'])
+    def launch():
+        global camera
+        global camera_source
+
+        # read request body params
+        model = request.form['model']
+        input = request.form['input']
+
+        # check input parameter
+        if input == "image": # if it is image, read file from request
+            image = request.files.get('image','')
+            image.save('./MyImage.jpg') # save it in filesystem
+            image_cuda = jetson.utils.loadImage('./MyImage.jpg') # convert it into cuda image
+        else:
+            if not camera_source == input: # if camera source is different from the last used
+                camera =jetson.utils.videoSource(input) # init new camera instance with new input
+                camera_source=input # save the last camera source
+            image_cuda = camera.Capture()  # get new cuda image from camera
+        detections=manager.process(image=image_cuda,task_type=model) # send cuda image and model to manager
+        if len(detections)>0:# if something was detected 
+            jetson.utils.saveImageRGBA('./MyImage_det.jpg',detections[0]) # save image
+        """Serves the main entry point"""
+
+        return send_file('./MyImage_det.jpg')# send response with image
+        
+        #render_template("index.html")
+    
+    
 
     @app.route("/video-stream", methods=['GET'])
     def video_stream():
