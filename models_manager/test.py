@@ -4,7 +4,8 @@ from manager import ModelManager
 from time import sleep
 
 manager = ModelManager()
-camera = jetson.utils.videoSource("rtp://127.0.0.1:8001",['-input-codec=h264'])#"csi://0")
+# camera = jetson.utils.videoSource("rtp://127.0.0.1:8001",['-input-codec=h264'])#"csi://0")
+camera = jetson.utils.videoSource("/dev/video2")
 #display = jetson.utils.videoOutput("rtp://127.0.0.1:8002",['-headless','-output-codec=h264'])
 #display = jetson.utils.videoOutput("./image.jpg",['-headless'])#,'-output-codec=h264'])
 
