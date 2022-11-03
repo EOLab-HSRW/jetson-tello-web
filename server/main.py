@@ -50,7 +50,7 @@ class Server(Resource):
         global camera
         global camera_source
 
-
+        # check if model is supported
         if not request.form['model'] in ModelManager.supported_models:
             return {"error": request.form['model']+" model is not supported"}
         # read request body params
