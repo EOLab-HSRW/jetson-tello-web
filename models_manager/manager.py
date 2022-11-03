@@ -6,7 +6,7 @@ from time import sleep
 from ctypes import c_bool
 
 class ModelManager():
-
+	# the list of supported models with additional information
 	supported_models ={
 		"detection":{
 			"networks":[
