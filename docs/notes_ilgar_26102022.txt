@@ -6,6 +6,25 @@ gst-launch-1.0 nvarguscamerasrc sensor-id=0 ! nvvidconv flip-method=2 ! 'video/x
   rtph264pay pt=96 ! udpsink host=127.0.0.1 port=8001 sync=false -e
 
 
+v4l2src device=/dev/video2 do-timestamp=true ! image/jpeg, width=(int)1280, height=(int)960 ! jpegdec ! video/x-raw ! appsink name=mysink
+
+gst-launch-1.0 videotestsrc is-live=true ! x264enc ! mpegtsmux ! hlssink
+
+gst-launch-1.0 v4l2src device=/dev/video2  ! 'video/x-raw(memory:NVMM), width=1280, height=960' ! hlssink
+
+gst-launch-1.0 -v videotestsrc pattern=snow ! 'video/x-raw, width=1280, height=960' ! autovideosink
+gst-launch-1.0 -v videotestsrc ! 'video/x-raw, width=1280, height=960' ! autovideosink
+gst-launch-1.0 -v videotestsrc pattern=snow ! 'video/x-raw, width=1280, height=960' ! x264enc ! mpegtsmux ! hlssink
+
+
+
+last working:
+gst-launch-1.0 v4l2src device=/dev/video2 ! 'video/x-raw, width=1280, height=960' ! videoconvert ! clockoverlay ! x264enc tune=zerolatency ! mpegtsmux ! hlssink
+
+run simple server in python to access the jetson streaming file: python3 -m http.server
+
+
+
 video-viewer commands:
 
 video-viewer --input-codec=h264 rtp://127.0.0.1:8001
