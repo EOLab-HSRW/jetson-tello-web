@@ -31,18 +31,19 @@ class ModelManager():
 		self.event = Event() # trigger to quit child thread
 		
 		
-	# thread target for inference
-	
-	# attributes for data exchange between the threads
-	
-	# processing_requested - flag to request inference in child thread
-	# inp - input image
-	# result - flag to request inference in child thread
-	# processed - flag to notify main thread about child thread completion
-	# event - trigger to quit child thread
-	# task_type - choose network
 	def process_thread(self,processing_requested,inp,result,processed, event, task_type):
-
+		"""
+			thread target for inference
+	
+			attributes for data exchange between the threads
+			
+			processing_requested - flag to request inference in child thread
+			inp - input image
+			result - flag to request inference in child thread
+			processed - flag to notify main thread about child thread completion
+			event - trigger to quit child thread
+			task_type - choose network
+		"""
 		# choose network to load
 		if task_type == "detection":
 			network = DetectNet()
@@ -65,15 +66,15 @@ class ModelManager():
 				print("killed child process "+ task_type)
 				break	
 
-	# method kills the current thread
 	def kill(self):
+		"""method kills the current thread"""
 		print("initiated process kill")
 		# set trigger
 		self.event.set()
 		self.current_thread = None
 	
-	# main processing method for inference
 	def process(self, image,task_type="detection"):
+		"""main processing method for inference"""
 		# clear previous calls' result
 		self.result.clear()
 		# try catch for handling keyboard interrupt

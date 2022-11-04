@@ -16,7 +16,7 @@ api = Api(app)
 # ModelManager instance
 manager = ModelManager()
 
-# global camera and instance variables, will be changed in launch endpoint
+"""global camera and instance variables, will be changed in launch endpoint"""
 camera = None
 camera_source =""
 model = ""
@@ -46,19 +46,21 @@ class Server(Resource):
         """Serves the main entry point"""
         return render_template("index.html")
 
-    # the endpoint receives POST requests with the following body:
-    # model - String - the task to be completed: detection or classification
-    # input - String - the input from which to get image. Possible values: 
-    #   image - image filefrom request body  
-    #   camera source : values csi://0, /dev/video2 and etc - the path to the camera driver from which to take image
-    #   
-    # global variable model, camera and camera_source are used to save state of inference
-    # and track camera source changes
-    # the image is converted to cuda format and sent to manager
-    # if the model is not in the list of supported ones by manager, the error json is returned
-    # otherwise the inferred image is returned
     @app.route("/launch", methods=['POST'])
     def launch():
+        """
+            the endpoint receives POST requests with the following body:
+            model - String - the task to be completed: detection or classification
+            input - String - the input from which to get image. Possible values: 
+            image - image filefrom request body  
+            camera source : values csi://0, /dev/video2 and etc - the path to the camera driver from which to take image
+            
+            global variable model, camera and camera_source are used to save state of inference
+            and track camera source changes
+            the image is converted to cuda format and sent to manager
+            if the model is not in the list of supported ones by manager, the error json is returned
+            otherwise the inferred image is returned
+        """
         global model
         global camera
         global camera_source
@@ -90,16 +92,16 @@ class Server(Resource):
         return send_file('./MyImage_det.jpg')# send response with image
         #render_template("index.html")
     
-    # endpoint returns the state of inference framework with running model and camera source
     @app.route("/state", methods=['GET'])
     def state():
+        """endpoint returns the state of inference framework with running model and camera source"""
         global model
         global camera_source
         return {"running_model":model,"input_source":camera_source}
 
-    # endpoint returns the information about the manager's supported models
     @app.route("/info", methods=['GET'])
     def info():
+        """endpoint returns the information about the manager's supported models"""
         return ModelManager.supported_models
 
     @app.route("/video-stream", methods=['GET'])
